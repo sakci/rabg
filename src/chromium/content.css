@@ -1,0 +1,26 @@
+/*
+ * The silver frame mirrors RetroAchievements' own mastered frame
+ * (.goldimage { border: 2px solid gold }). We use "silver" so the
+ * beaten tiles line up perfectly with the mastered ones.
+ */
+
+#gameawards img.silverimage {
+  box-sizing: content-box;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 2px solid silver;
+  padding: 0;
+}
+
+/* Crown icons shown next to the mastered / beaten counters. */
+.ra-crown-icon {
+  width: 15px;
+  height: 15px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Keep the small grouping of the two counters tidy. */
+#gameawards h3 .ra-beaten-counter {
+  white-space: nowrap;
+}

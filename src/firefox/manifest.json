@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "RABG: Add Beaten Badges to RetroAchievements",
+  "version": "1.0.0",
+  "description": "Shows your beaten games alongside mastered games in the Game Awards section of RetroAchievements profile pages.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "rabg-for-retroachievements@foss",
+      "strict_min_version": "109.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "icons": {
+    "48": "icons/gold.svg",
+    "96": "icons/gold.svg"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://retroachievements.org/user/*",
+        "*://*.retroachievements.org/user/*"
+      ],
+      "css": ["content.css"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/gold.svg", "icons/silver.svg"],
+      "matches": [
+        "*://retroachievements.org/*",
+        "*://*.retroachievements.org/*"
+      ]
+    }
+  ]
+}
