@@ -1,7 +1,7 @@
 # RABG: Add Beaten Badges to RetroAchievements
 Shows your beaten games alongside mastered games in the Game Awards section of RetroAchievements profile pages.
 
-![https://addons.mozilla.org/en-US/firefox/addon/rabg-for-retroachievements/](https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png) ![https://chromewebstore.google.com/detail/bpejbgdgfhgcnddgbheipnondimncjfk/](https://developer.chrome.com/static/docs/webstore/branding/image/206x58-chrome-web-bcb82d15b2486.png)
+[<img src="https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png">](https://addons.mozilla.org/en-US/firefox/addon/rabg-for-retroachievements/) [<img src="https://developer.chrome.com/static/docs/webstore/branding/image/206x58-chrome-web-bcb82d15b2486.png">](https://chromewebstore.google.com/detail/bpejbgdgfhgcnddgbheipnondimncjfk/)
 
 ***
 
