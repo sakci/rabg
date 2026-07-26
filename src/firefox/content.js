@@ -1,22 +1,22 @@
 /*
- * RABG: Add Beaten Game Badges to RetroAchievements
+ * RABG: Add Beaten Badges to RetroAchievements
  * ------------------------------------------------------------------
- * On a RetroAchievements user profile page, this script:
- *   1. Reads the "Completion Progress" list for every game marked
- *      as "beaten" (data-award="beaten-hardcore" / "beaten").
- *   2. Sorts them by completion percentage (highest first).
- *   3. Adds them to the "Game Awards" grid with a SILVER frame.
- *   4. Updates the header counter: swaps the 👑 emoji for gold.svg
- *      and adds a second counter (silver.svg) for beaten games.
+ * Reorganizes the "Game Awards" box on a RetroAchievements profile into
+ * two labeled groups.
  *
- * If the page renders late or is re-rendered by Alpine.js,
- * a MutationObserver re-applies the changes.
+ *   Mastered   👑 (hardcore mastered)   🎖 (softcore completed)
+ *     [ mastered tiles (gold) + completed tiles (plain) ]
+ *   ─────────── divider ───────────
+ *   Beaten     silver-crown (hardcore)   🎖 (softcore)
+ *     [ beaten tiles, sorted by completion % ]
  */
 (function () {
   "use strict";
 
-  var BEATEN_ATTR = "beaten-hardcore"; // primary award value on RA
   var crownUrls = { gold: "", silver: "" };
+  var GRID_CLASSES =
+    "component w-full place-content-center bg-embed gap-2 grid " +
+    "grid-cols-[repeat(auto-fill,minmax(52px,52px))] xl:rounded xl:py-2";
 
   /* ---------- helpers ------------------------------------------------ */
 
@@ -27,12 +27,10 @@
   }
 
   function getUsername() {
-    // URL looks like /user/tele  ->  "tele"
     var parts = location.pathname.split("/").filter(Boolean);
     return parts[0] === "user" && parts[1] ? parts[1] : "";
   }
 
-  // Completion as a 0..1 fraction.
   function completionOf(row) {
     var pb = row.querySelector('[role="progressbar"]');
     if (pb) {
@@ -43,22 +41,69 @@
     var titled = row.querySelector('[title*="Progress:"]');
     if (titled) {
       var m = titled.getAttribute("title").match(/Progress:\s*([\d.]+)\s*\/\s*([\d.]+)/);
-      if (m) {
-        var n = parseFloat(m[1]), d = parseFloat(m[2]);
-        if (d > 0) return n / d;
-      }
+      if (m) { var n = parseFloat(m[1]), d = parseFloat(m[2]); if (d > 0) return n / d; }
     }
     var txt = row.textContent.match(/([\d.]+)\s*of\s*([\d.]+)/);
-    if (txt) {
-      var nn = parseFloat(txt[1]), dd = parseFloat(txt[2]);
-      if (dd > 0) return nn / dd;
-    }
+    if (txt) { var nn = parseFloat(txt[1]), dd = parseFloat(txt[2]); if (dd > 0) return nn / dd; }
     return 0;
   }
 
-  // Collect unique beaten games from the Completion Progress section.
-  function getBeatenGames() {
+  /* ---------- data --------------------------------------------------- */
+
+  // Hardcore mastered + softcore completed counts AND their native hover
+  // descriptions (preserving text like "(1250 hidden)").
+  function readMasteryCounts(awards) {
+    var hc = 0, sc = 0, hcTitle = "", scTitle = "";
+    var nodes = awards.querySelectorAll("h3 .cursor-help, h3 div[title]");
+    for (var i = 0; i < nodes.length; i++) {
+      var div = nodes[i];
+      var rawTitle = div.getAttribute("title") || "";
+      var title = rawTitle.toLowerCase();
+      var numEl = div.querySelector(".numitems");
+      var num = numEl ? (parseInt(numEl.textContent, 10) || 0) : 0;
+      if (title.indexOf("mastered") !== -1 && num) { hc = num; hcTitle = rawTitle; }
+      else if (title.indexOf("completed") !== -1 && num) { sc = num; scTitle = rawTitle; }
+    }
+    var grid = awards.querySelector(".grid");
+    if (grid) {
+      if (!hc) { hc = grid.querySelectorAll("img.goldimage").length; hcTitle = hc + " games mastered"; }
+      if (!sc) { sc = grid.querySelectorAll("img.siteawards").length; scTitle = sc + " games completed"; }
+    }
+    return { hc: hc, sc: sc, hcTitle: hcTitle, scTitle: scTitle };
+  }
+
+  // TRUE beaten totals (hardcore + softcore) from the Progression Status
+  // "Total" row's "any-beaten" cell. That cell holds one or two ".tally" dots:
+  // a filled dot (class contains "bg-") = hardcore, a hollow dot = softcore.
+  // Returns {hc, sc} or null.
+  function getBeatenTotals() {
+    var rows = document.querySelectorAll(".progression-status-row");
+    for (var i = 0; i < rows.length; i++) {
+      var label = rows[i].querySelector("p");
+      if (label && /total/i.test(label.textContent)) {
+        var cell = rows[i].querySelector('a[href*="any-beaten"]');
+        if (!cell) return null;
+        var tallies = cell.querySelectorAll(".tally");
+        if (!tallies.length) return null;
+        var hc = 0, sc = 0;
+        for (var j = 0; j < tallies.length; j++) {
+          var n = parseInt(tallies[j].textContent.replace(/[^0-9]/g, ""), 10) || 0;
+          var dot = tallies[j].querySelector(".dot");
+          if (dot && dot.className.indexOf("bg-") !== -1) hc += n; // filled = hardcore
+          else sc += n;                                           // hollow = softcore
+        }
+        return { hc: hc, sc: sc };
+      }
+    }
+    return null;
+  }
+
+  // Beaten games (hardcore + softcore) from the "hide completed games" view,
+  // sorted by completion % (highest first). De-duplicated by game ID.
+  // `excludeIds` = game IDs already mastered/completed (skipped).
+  function getBeatenGames(excludeIds) {
     var scope =
+      document.querySelector("#completion-progress-incomplete") ||
       document.querySelector("#completion-progress-all") ||
       document.querySelector("#usercompletedgamescomponent") ||
       document;
@@ -66,53 +111,93 @@
     var map = Object.create(null);
     var list = [];
 
-    rows.forEach(function (tr) {
+    for (var i = 0; i < rows.length; i++) {
+      var tr = rows[i];
       var awardEl = tr.querySelector("[data-award]");
-      if (!awardEl) return;
+      if (!awardEl) continue;
       var award = awardEl.getAttribute("data-award");
-      if (award !== BEATEN_ATTR && award !== "beaten") return;
+      var type = null;
+      if (award === "beaten-hardcore") type = "hc";
+      else if (award === "beaten-softcore") type = "sc";
+      else if (award === "beaten") type = "hc";
+      else continue;
 
       var link = tr.querySelector('a[href*="/game/"]');
       var img = tr.querySelector("img");
-      if (!link || !img) return;
+      if (!link || !img) continue;
 
       var m = link.getAttribute("href").match(/\/game\/(\d+)/);
-      if (!m) return;
+      if (!m) continue;
 
       var gameId = m[1];
-      var pct = completionOf(tr);
+      if (excludeIds && excludeIds[gameId]) continue; // already mastered
 
-      // De-duplicate (the same game appears in multiple toggle views).
+      var pct = completionOf(tr);
       if (map[gameId]) {
         if (pct > map[gameId].pct) map[gameId].pct = pct;
-        return;
+        continue;
       }
-      map[gameId] = {
-        gameId: gameId,
-        imgSrc: img.getAttribute("src"),
-        pct: pct
-      };
+      map[gameId] = { gameId: gameId, imgSrc: img.getAttribute("src"), pct: pct, type: type };
       list.push(map[gameId]);
-    });
+    }
 
-    list.sort(function (a, b) { return b.pct - a.pct; }); // highest first
+    list.sort(function (a, b) { return b.pct - a.pct; });
     return list;
   }
 
   /* ---------- DOM builders ------------------------------------------ */
+
+  function crownImg(which) {
+    var img = document.createElement("img");
+    img.className = "ra-crown-icon";
+    img.src = crownUrls[which];
+    img.alt = "";
+    return img;
+  }
+
+  function makeCrownCounter(which, count, title) {
+    var c = document.createElement("span");
+    c.className = "ra-counter";
+    c.setAttribute("title", title);
+    var ic = document.createElement("span");
+    ic.className = "ra-counter-icon";
+    ic.appendChild(crownImg(which));
+    var num = document.createElement("span");
+    num.className = "numitems";
+    num.textContent = String(count);
+    c.appendChild(ic);
+    c.appendChild(num);
+    return c;
+  }
+
+  function makeMedalCounter(count, title) {
+    var c = document.createElement("span");
+    c.className = "ra-counter";
+    c.setAttribute("title", title);
+    var medal = document.createElement("span");
+    medal.className = "ra-medal";
+    medal.textContent = "🎖";
+    var num = document.createElement("span");
+    num.className = "numitems";
+    num.textContent = String(count);
+    c.appendChild(medal);
+    c.appendChild(num);
+    return c;
+  }
 
   function makeBeatenTile(game, username) {
     var wrap = document.createElement("div");
     wrap.setAttribute("data-gameid", game.gameId);
     wrap.setAttribute("data-beaten", "true");
     wrap.setAttribute("data-pct", game.pct.toFixed(4));
+    wrap.setAttribute("data-tier", game.type);
 
     var span = document.createElement("span");
     span.className = "inline";
     span.setAttribute(
       "x-data",
-      "tooltipComponent($el, { dynamicType: 'game', dynamicId: '" +
-        game.gameId + "'" + (username ? ", dynamicContext: '" + username + "'" : "") + " })"
+      "tooltipComponent($el, { dynamicType: 'game', dynamicId: '" + game.gameId + "'" +
+        (username ? ", dynamicContext: '" + username + "'" : "") + " })"
     );
     span.setAttribute("x-on:mouseover", "showTooltip($event)");
     span.setAttribute("x-on:mouseleave", "hideTooltip");
@@ -129,7 +214,7 @@
     img.height = 48;
     img.src = game.imgSrc;
     img.alt = "";
-    img.className = "silverimage";
+    img.className = game.type === "hc" ? "silverimage" : "plainimage";
 
     a.appendChild(img);
     span.appendChild(a);
@@ -137,99 +222,134 @@
     return wrap;
   }
 
-  function crownImg(which) {
-    var img = document.createElement("img");
-    img.className = "ra-crown-icon";
-    img.src = crownUrls[which];
-    img.alt = "";
-    return img;
+  function buildGroupLabel(text, first) {
+    var d = document.createElement("div");
+    d.className = "ra-grouplabel" + (first ? " ra-grouplabel-first" : "");
+    var lbl = document.createElement("span");
+    lbl.className = "ra-lbl";
+    lbl.textContent = text;
+    d.appendChild(lbl);
+    return d;
   }
 
-  function makeCounter(which, count, title) {
-    var box = document.createElement("div");
-    box.className = "cursor-help flex gap-x-1 text-sm items-center";
-    box.setAttribute("title", title);
+  function buildTitle() {
+    var h3 = document.createElement("h3");
+    h3.className = "flex justify-between gap-2";
+    var span = document.createElement("span");
+    span.className = "grow";
+    span.textContent = "Game Awards";
+    h3.appendChild(span);
+    return h3;
+  }
 
-    var iconHolder = document.createElement("div");
-    iconHolder.className = "flex items-center";
-    iconHolder.appendChild(crownImg(which));
+  // Builds a hover title: "N games beaten[suffix]" + "(M hidden)" when the
+  // true total exceeds what was fetched.
+  function beatenHover(display, total, fetched, suffix) {
+    var hidden = total > fetched ? total - fetched : 0;
+    return display + " games beaten" + suffix + (hidden > 0 ? " (" + hidden + " hidden)" : "");
+  }
 
-    var num = document.createElement("div");
-    num.className = "numitems";
-    num.textContent = String(count);
+  // Beaten group: optional divider + label + grid. The silver crown shows the
+  // hardcore total, the 🎖 the softcore total (each never less than the tiles
+  // actually shown). `totals` = {hc, sc} from Progression Status (or null).
+  function buildBeatenSection(beaten, username, gridClass, withDivider, totals) {
+    var section = document.createElement("div");
+    section.className = "ra-beaten-section";
 
-    box.appendChild(iconHolder);
-    box.appendChild(num);
-    return box;
+    if (withDivider) {
+      var divider = document.createElement("div");
+      divider.className = "ra-divider";
+      section.appendChild(divider);
+    }
+
+    var hcFetched = 0, scFetched = 0;
+    beaten.forEach(function (g) { if (g.type === "hc") hcFetched++; else scFetched++; });
+    var hcTotal = totals && typeof totals.hc === "number" ? totals.hc : hcFetched;
+    var scTotal = totals && typeof totals.sc === "number" ? totals.sc : scFetched;
+
+    var bLabel = buildGroupLabel("Beaten", false);
+    var hcDisp = Math.max(hcTotal, hcFetched);
+    if (hcDisp > 0)
+      bLabel.appendChild(makeCrownCounter("silver", hcDisp, beatenHover(hcDisp, hcTotal, hcFetched, "")));
+    var scDisp = Math.max(scTotal, scFetched);
+    if (scDisp > 0)
+      bLabel.appendChild(makeMedalCounter(scDisp, beatenHover(scDisp, scTotal, scFetched, " (casual)")));
+    section.appendChild(bLabel);
+
+    var bGrid = document.createElement("div");
+    bGrid.className = gridClass;
+    beaten.forEach(function (g) { bGrid.appendChild(makeBeatenTile(g, username)); });
+    section.appendChild(bGrid);
+
+    return section;
   }
 
   /* ---------- main apply routine ------------------------------------ */
 
   function apply() {
     var awards = document.getElementById("gameawards");
-    if (!awards) return false;
-
-    var grid = awards.querySelector(".grid");
-    if (!grid) return false;
-
-    // Already injected? (avoids duplicates on re-render)
-    if (grid.querySelector('[data-beaten="true"]') &&
-        awards.querySelector(".ra-beaten-counter")) {
+    if (awards && awards.dataset.raApplied === "v2" && awards.querySelector(".ra-grouplabel")) {
       return true;
     }
 
-    var games = getBeatenGames();
-    var username = getUsername();
-
-    // 1) Append beaten tiles (sorted), only if not already present.
-    if (!grid.querySelector('[data-beaten="true"]')) {
-      var tiles = games.map(function (g) { return makeBeatenTile(g, username); });
-      tiles.forEach(function (t) { grid.appendChild(t); });
-      // Each tile carries the same x-data attributes as RA's mastered
-      // badges, so the site's own Alpine.js detects them (via its mutation
-      // observer) and binds RetroAchievements' native hover tooltips —
-      // nothing extra to do on our side.
-    }
-
-    // 2) Update the header counters (only once).
-    if (!awards.querySelector(".ra-beaten-counter")) {
-      var h3 = awards.querySelector("h3");
-      if (h3) {
-        var existing = h3.querySelector(".cursor-help"); // mastered counter
-
-        // Replace the 👑 emoji with the gold crown image.
-        if (existing) {
-          var holder = existing.querySelector(".text-2xs");
-          if (holder) {
-            holder.textContent = "";
-            holder.classList.add("flex", "items-center");
-            holder.appendChild(crownImg("gold"));
-          }
+    // Game IDs already mastered/completed in the grid — excluded from Beaten.
+    var masteredIds = Object.create(null);
+    if (awards) {
+      var mtiles = awards.querySelectorAll("[data-gameid]");
+      for (var k = 0; k < mtiles.length; k++) {
+        if (mtiles[k].getAttribute("data-beaten") !== "true") {
+          masteredIds[mtiles[k].getAttribute("data-gameid")] = true;
         }
-
-        // Group both counters on the right side of the header.
-        var right = document.createElement("div");
-        right.className = "flex items-center gap-x-3";
-
-        if (existing) {
-          right.appendChild(existing);
-        } else {
-          // Fallback: build a mastered counter from existing gold tiles.
-          var masteredCount = grid.querySelectorAll("img.goldimage").length;
-          right.appendChild(makeCounter("gold", masteredCount, masteredCount + " games mastered"));
-        }
-
-        var beatenCounter = makeCounter("silver", games.length, games.length + " games beaten");
-        beatenCounter.classList.add("ra-beaten-counter");
-        right.appendChild(beatenCounter);
-
-        h3.appendChild(right);
       }
     }
 
+    var beaten = getBeatenGames(masteredIds);
+    var beatenTotals = getBeatenTotals();
+    var hasTotal = !!(beatenTotals && (beatenTotals.hc > 0 || beatenTotals.sc > 0));
+    var username = getUsername();
+    var created = false;
+
+    if (awards) {
+      var grid = awards.querySelector(".grid");
+      if (!grid) return false;
+
+      var counts = readMasteryCounts(awards);
+
+      var oldCounters = awards.querySelectorAll("h3 .cursor-help");
+      for (var i = 0; i < oldCounters.length; i++) oldCounters[i].remove();
+
+      var mLabel = buildGroupLabel("Mastered", true);
+      if (counts.hc > 0)
+        mLabel.appendChild(makeCrownCounter("gold", counts.hc, counts.hcTitle || (counts.hc + " games mastered")));
+      if (counts.sc > 0)
+        mLabel.appendChild(makeMedalCounter(counts.sc, counts.scTitle || (counts.sc + " games completed")));
+      awards.insertBefore(mLabel, grid);
+
+      if (beaten.length > 0 || hasTotal) {
+        var section = buildBeatenSection(beaten, username, grid.className, true, beatenTotals);
+        grid.parentNode.insertBefore(section, grid.nextSibling);
+      }
+
+      awards.dataset.raApplied = "v2";
+    } else {
+      if (beaten.length === 0 && !hasTotal) return true;
+      var completed = document.getElementById("completedgames");
+      if (!completed || !completed.parentNode) return false;
+
+      awards = document.createElement("div");
+      awards.id = "gameawards";
+      awards.appendChild(buildTitle());
+      awards.appendChild(buildBeatenSection(beaten, username, GRID_CLASSES, false, beatenTotals));
+
+      completed.parentNode.insertBefore(awards, completed);
+      awards.dataset.raApplied = "v2";
+      created = true;
+    }
+
     console.info(
-      "[RA: Beaten in Game Awards] Added " + games.length +
-      " beaten game(s) to the Game Awards section."
+      "[RA: Beaten in Game Awards] " + beaten.length + " beaten tile(s) shown" +
+      (beatenTotals ? " (Progression Status: " + beatenTotals.hc + " HC, " + beatenTotals.sc + " SC)" : "") +
+      (created ? " — created the Game Awards box." : ".")
     );
     return true;
   }
@@ -245,27 +365,19 @@
     }, 500);
   }
 
-  var observer = null;
-  var debounce = null;
+  var observer = null, debounce = null;
   function startObserver() {
     if (observer) return;
     observer = new MutationObserver(function () {
       if (debounce) return;
-      debounce = setTimeout(function () {
-        debounce = null;
-        apply();
-      }, 300);
+      debounce = setTimeout(function () { debounce = null; apply(); }, 300);
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
   function run() {
-    if (apply()) {
-      startObserver(); // keep changes alive across RA's re-renders
-    } else {
-      scheduleRetry();
-      startObserver();
-    }
+    if (apply()) startObserver();
+    else { scheduleRetry(); startObserver(); }
   }
 
   function init() {
@@ -274,11 +386,8 @@
       crownUrls.gold = rt.getURL("icons/gold.svg");
       crownUrls.silver = rt.getURL("icons/silver.svg");
     }
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", run);
-    } else {
-      run();
-    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+    else run();
   }
 
   init();
