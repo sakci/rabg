@@ -17,6 +17,12 @@ On a RetroAchievements user profile page, this extension:
 
 ***
 
+# Changelog
+
+You can find the changelog [here](CHANGELOG.md).
+
+***
+
 # Known Issues
 
 This extension can only display beaten games that already appear in "Completion Progress" section of a user profile. That section shows only a limited selection of games rather than all of them, so once a user plays a lot of titles, some beaten games will fall outside it and won't appear there.
