@@ -13,14 +13,12 @@ On a RetroAchievements user profile page, this extension:
 3. Adds them to the "Game Awards" grid with a silver frame.
 4. Adds a second counter with a silver crown icon for beaten games.
 
-![](beforeafter.png)
+![](compare.png)
 
 ***
 
-# Scope & Intent
+# Known Issues
 
 This extension can only display beaten games that already appear in "Completion Progress" section of a user profile. That section shows only a limited selection of games rather than all of them, so once a user plays a lot of titles, some beaten games will fall outside it and won't appear there.
 
 Catching every beaten game would mean fetching and paginating through the separate progress pages (i.e. extra network requests, parsing multiple pages, and keeping it all in sync, etc.) which is far more complex and more likely to break as the site changes.
-
-The aim of this project is less to be a finished product and more to demonstrate how beaten games could look in the Game Awards section, in the hope of convincing RetroAchievements to add this feature officially themselves.
