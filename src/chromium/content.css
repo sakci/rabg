@@ -1,0 +1,72 @@
+/*
+ * RABG: Add Beaten Badges to RetroAchievements — styles
+ * ---------------------------------------------------------------
+ * Group labels (Mastered / Beaten) with inline counters, a divider,
+ * and the badge frames:
+ *   - hardcore mastered : goldimage  (gold frame, native)
+ *   - hardcore beaten   : silverimage (silver frame)
+ *   - softcore          : plain frame (neutral / uncolored)
+ */
+
+/* ---- Group label rows ---- */
+#gameawards .ra-grouplabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+#gameawards .ra-grouplabel-first { margin-top: 12px; }
+
+#gameawards .ra-lbl {
+  /* Let the label expand so the counters sit in the right corner,
+     matching RA's other section counters (e.g. site awards). */
+  flex-grow: 1;
+  /* Label is intentionally plain: it inherits the same weight, color, and
+     size as the counter numbers. */
+}
+
+#gameawards .ra-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: help;
+}
+#gameawards .ra-counter .numitems { font-weight: 400; }
+#gameawards .ra-counter-icon { display: inline-flex; align-items: center; }
+#gameawards .ra-crown-icon {
+  width: 15px;
+  height: 15px;
+  display: inline-block;
+  vertical-align: middle;
+}
+#gameawards .ra-medal { font-size: 0.9rem; line-height: 1; }
+
+/* ---- Divider between Mastered and Beaten ---- */
+#gameawards .ra-divider {
+  height: 1px;
+  background: var(--embed-highlight-color, #2a2a2a);
+  margin: 16px 0 0;
+}
+
+/* ---- Hardcore beaten: silver frame (mirrors native .goldimage) ---- */
+#gameawards img.silverimage {
+  box-sizing: content-box;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 2px solid silver;
+  padding: 0;
+}
+
+/* ---- Softcore: no award frame, matching RA's own softcore "completed"
+   styling (.badgeimg has a transparent border = no visible frame). ---- */
+#gameawards img.plainimage {
+  box-sizing: content-box;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 2px solid transparent;
+  padding: 0;
+}
+
+/* (The beaten sort selector lives in the site footer, below "Theme", and uses
+   RA's own .select classes — no extra styling needed here.) */

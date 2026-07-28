@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="beaten">
+  <defs>
+    <linearGradient id="silverGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCFCFD"/>
+      <stop offset="0.5" stop-color="#C8CDD3"/>
+      <stop offset="1" stop-color="#8A9099"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#silverGrad)" stroke="#5B616A" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M8 44 L8 24 L20 34 L32 16 L44 34 L56 24 L56 44 Z"/>
+    <rect x="9" y="45" width="46" height="9" rx="2"/>
+  </g>
+  <g fill="#FFFFFF" stroke="#5B616A" stroke-width="1.6">
+    <circle cx="8" cy="24" r="3.6"/>
+    <circle cx="32" cy="16" r="3.8"/>
+    <circle cx="56" cy="24" r="3.6"/>
+  </g>
+</svg>
