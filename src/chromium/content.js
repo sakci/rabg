@@ -7,7 +7,7 @@
  *
  *   Mastered   👑 (hardcore mastered)   🎖 (softcore completed)
  *   ─────────── divider ───────────
- *   Beaten     silver-crown (hardcore)   🎖 (softcore)   [sort selector]
+ *   Beaten     silver-crown (hardcore)   🎖 (softcore)
  */
 (function () {
   "use strict";
