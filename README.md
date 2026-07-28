@@ -13,11 +13,11 @@ On a RetroAchievements user profile page, this extension:
 3. Adds them to the "Game Awards" grid with a silver frame.
 4. Adds a second counter with a silver crown icon for beaten games.
 
+<img src="https://raw.githubusercontent.com/sakci/rabg/main/compare.png" width="512">
+
 At the very bottom of the page (i.e. the footer section of the website), there'll be a settings section that lets you adjust the way the beaten badges are sorted.
 
-![](compare.png)
-
-![](footer.png)
+<img src="https://raw.githubusercontent.com/sakci/rabg/main/footer.png" width="512">
 
 ***
 
