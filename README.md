@@ -27,8 +27,7 @@ You can find the changelog [here](CHANGELOG.md).
 
 ***
 
-# Known Issues
-
-This extension can only display beaten games that already appear in "Completion Progress" section of a user profile. That section shows only a limited selection of games rather than all of them, so once a user plays a lot of titles, some beaten games will fall outside it and won't appear there.
-
-Catching every beaten game would mean fetching and paginating through the separate progress pages (i.e. extra network requests, parsing multiple pages, and keeping it all in sync, etc.) which is far more complex and more likely to break as the site changes.
+# What's missing? / Future plans
+- If a user has beaten hundreds of games, the extension may not be able create badge for every single one of them. The extension can only generate badges for games listed in the Completion Progress section (this section only displays games with the highest completion percentages). I’ve heard that RA will soon introduce OAuth support; if OAuth support is added, it may be possible to generate badges for all completed games.
+- Currently, it is not possible to sort badges by “Beaten Date” because there isn’t a reliable way for this extension to determine the exact date games were beaten. If OAuth support is introduced to RA, it may become possible to add this feature based on the information we can access via OAuth.
+- Manually sorting badges, hiding specific badges, and making sure all these features work properly across all browsers and on mobile devices doesn’t seem like a very simple task. Not to mention, since the current version of the extension can’t access a list of all the games users have beaten, it might not make sense to add this feature right now.
