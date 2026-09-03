@@ -224,14 +224,81 @@
   }
 
   // The logged-in user, from the navbar account dropdown (absent when
-  // logged out): <div class="dropdown nav-item"><a class="nav-link"
-  // href="…/user/<name>"> — the only nav-link pointing at a /user/ URL.
+  // logged out). Desktop: trigger itself is <a href="/user/NAME">.
+  // Mobile: trigger is a <button>, profile link lives inside the dropdown
+  // menu (which also contains the logout form — unique to the account
+  // dropdown, so we can scope safely and avoid other users' profile links
+  // in notification dropdowns). Cached after first success so mobile
+  // re-renders / closed menus don't cause intermittent failures.
+  var _cachedViewer = null;
   function getViewerUsername() {
-    var links = document.querySelectorAll("div.dropdown a.nav-link[href*='/user/']");
-    for (var i = 0; i < links.length; i++) {
-      var m = (links[i].getAttribute("href") || "").match(/\/user\/([^\/?#]+)/);
-      if (m) { try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
-    }
+    if (_cachedViewer) return _cachedViewer;
+    // Desktop path — original, still fastest.
+    try {
+      var links = document.querySelectorAll("div.dropdown a.nav-link[href*='/user/']");
+      for (var i = 0; i < links.length; i++) {
+        var mm1 = (links[i].getAttribute("href") || "").match(/\/user\/([^\/?#]+)/);
+        if (mm1) {
+          try { _cachedViewer = decodeURIComponent(mm1[1]); } catch (e) { _cachedViewer = mm1[1]; }
+          return _cachedViewer;
+        }
+      }
+    } catch (e) {}
+    // Mobile fallback: find the logout form first (unique to account
+    // dropdown), then walk up to its dropdown container and read the
+    // profile link inside. Works even when the trigger is a <button>.
+    try {
+      var lf = document.querySelector("form[action*='logout']");
+      if (lf) {
+        var dd = null;
+        try { dd = lf.closest("div.dropdown"); } catch (e) {}
+        if (!dd) {
+          var p = lf.parentElement;
+          while (p) {
+            if (p.classList && p.classList.contains("dropdown")) { dd = p; break; }
+            p = p.parentElement;
+          }
+        }
+        if (dd) {
+          var menuLinks = dd.querySelectorAll("a[href*='/user/']");
+          for (var j = 0; j < menuLinks.length; j++) {
+            var href = menuLinks[j].getAttribute("href") || "";
+            var mm2 = href.match(/\/user\/([^\/?#]+)/);
+            if (mm2) {
+              try { _cachedViewer = decodeURIComponent(mm2[1]); } catch (e2) { _cachedViewer = mm2[1]; }
+              return _cachedViewer;
+            }
+          }
+        }
+      }
+      // Broader scan if closest failed (some RA builds nest differently)
+      var dds = document.querySelectorAll("div.dropdown");
+      for (var di = 0; di < dds.length; di++) {
+        var d = dds[di];
+        if (!d.querySelector("form[action*='logout']")) continue;
+        var mls = d.querySelectorAll("a[href*='/user/']");
+        for (var k = 0; k < mls.length; k++) {
+          var hf = mls[k].getAttribute("href") || "";
+          var mm3 = hf.match(/\/user\/([^\/?#]+)/);
+          if (mm3) {
+            try { _cachedViewer = decodeURIComponent(mm3[1]); } catch (e3) { _cachedViewer = mm3[1]; }
+            return _cachedViewer;
+          }
+        }
+      }
+    } catch (e) {}
+    // Inertia fallback (some RA pages like Settings are Inertia-rendered).
+    try {
+      var sp = document.querySelector("script[data-page]");
+      if (sp) {
+        var raw = sp.textContent || sp.innerHTML || "";
+        var data = JSON.parse(raw);
+        if (data && data.props && data.props.auth && data.props.auth.user) {
+          var u = data.props.auth.user.username || data.props.auth.user.displayName || "";
+          if (u) { _cachedViewer = u; return _cachedViewer; }
+        }
+      }
+    } catch (e2) {}
     return "";
   }
 
@@ -576,7 +643,32 @@
     slider.className = "ra-switch-slider";
     wrap.appendChild(input);
     wrap.appendChild(slider);
-    input.addEventListener("change", function () { onToggle(input.checked); });
+    // Robust toggle: change + explicit click/touch on the slider.
+    // Some mobile browsers don't fire change when the input is
+    // visually hidden (opacity 0, 0x0), and rapid taps can be swallowed.
+    var toggling = false;
+    function fireToggle(state) {
+      if (toggling) return;
+      toggling = true;
+      try { onToggle(state); } catch (e) {}
+      setTimeout(function () { toggling = false; }, 150);
+    }
+    input.addEventListener("change", function () { fireToggle(input.checked); });
+    // Click on the visible slider should always toggle, even if the
+    // hidden input didn't receive the event (touch quirk).
+    slider.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      input.checked = !input.checked;
+      fireToggle(input.checked);
+    });
+    // Touch devices: treat touchend as a toggle as well (prevents
+    // 300ms delay / missed taps in responsive mode).
+    slider.addEventListener("touchend", function (e) {
+      e.preventDefault();
+      input.checked = !input.checked;
+      fireToggle(input.checked);
+    }, { passive: false });
     r.controls.appendChild(sr);
     r.controls.appendChild(wrap);
     return r;
@@ -760,6 +852,15 @@
     var footer = document.querySelector("footer");
     if (!footer || !document.body) return;
     if (!footer.querySelector(".ra-footer-sort")) return; // nothing injected
+    // On mobile (<768px) RA's footer is NOT absolutely positioned — it is
+    // static and needs no fixed height or body padding. Setting a padding
+    // there creates the "scroll way past the footer" gap seen on phones.
+    if (window.innerWidth < 768) {
+      footer.style.height = "auto";
+      footer.style.boxSizing = "";
+      document.body.style.paddingBottom = "";
+      return;
+    }
     var cs = getComputedStyle(document.documentElement);
     var md = parseInt(cs.getPropertyValue("--footer-height-md"), 10) || 320;
     var lg = parseInt(cs.getPropertyValue("--footer-height-lg"), 10) || 350;
@@ -1019,7 +1120,7 @@
       e.preventDefault();
       positionGhostAt(dragState.lastX, dragState.lastY);
       updateDropSlot(dragState.lastX, dragState.lastY);
-    });
+    }, { passive: false });
     document.addEventListener("pointerup", function () { if (dragState) endGesture(); });
     document.addEventListener("pointercancel", function () { if (dragState) endGesture(); });
   }

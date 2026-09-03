@@ -177,7 +177,7 @@
    stay vertically centered relative to each other. */
 .ra-footer-manual .flex.align-center.ml-2.gap-2 { align-items: center; }
 .ra-edit-slot { display: inline-flex; align-items: center; }
-.ra-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex: none; }
+.ra-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex: none; touch-action: manipulation; }
 .ra-switch input { opacity: 0; width: 0; height: 0; }
 .ra-switch-slider {
   position: absolute;
@@ -223,12 +223,22 @@
    carries RA's Alpine tooltip handlers.) */
 #gameawards .ra-beaten-grid.ra-editing .inline { pointer-events: none; }
 
-/* No text selection while press-and-hold dragging badges (mouse and touch). */
+/* No text selection while press-and-hold dragging badges (mouse and touch).
+   touch-action: none is critical on mobile — without it, vertical drags
+   scroll the page instead of moving the badge (Firefox mobile quirk).
+   overscroll-behavior contains the gesture. */
+#gameawards .ra-beaten-grid.ra-editing {
+  touch-action: none;
+  overscroll-behavior: contain;
+}
 #gameawards .ra-beaten-grid.ra-editing,
 #gameawards .ra-beaten-grid.ra-editing * {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+#gameawards .ra-beaten-grid.ra-editing * {
+  touch-action: none;
 }
 
 /* Hidden badges (edit mode): dimmed, restorable. */

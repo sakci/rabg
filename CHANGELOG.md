@@ -17,3 +17,10 @@
 - You can now manually order your Beaten badges and hide the ones you don't want to display (for your own profile only). Enable "Manual Order" in the RABG settings, then press the "Edit Badges" button: the page will scroll straight to your beaten badges, and then you can press and hold a badge to drag it around. You can click the ✕ button on a badge to hide it. Hidden badges can be restored via ＋ button. When you're done, click the "Finish Editing" button to save your changes. New beaten games will appear at the end of the list, visible by default.
 - You can now export and import all your RABG settings (sorting, size, color, manual order, hidden badges) as a JSON file. Handy for backing up or moving your settings between browsers.
 - Various polish and backend improvements.
+
+# v1.3.1 (2026/09/04)
+- Fixed an issue where the Manual Order setting was not appearing on the mobile version of the website.
+- Fixed extension popup scaling/zoom issues on mobile devices.
+- Fixed a layout issue on mobile that caused extension to create an excessive whitespace below the footer.
+- Fixed an issue on touch devices where dragging Beaten badges would scroll the page instead of moving the badge.
+- Improved Manual Order toggle responsiveness on touch devices.
