@@ -5,7 +5,7 @@
  * and the badge frames:
  *   - hardcore mastered : goldimage  (gold frame, native)
  *   - hardcore beaten   : silverimage (silver frame)
- *   - softcore          : plain frame (neutral / uncolored)
+ *   - softcore          : no frame
  */
 
 /* ---- Group label rows ---- */
@@ -68,5 +68,243 @@
   padding: 0;
 }
 
-/* (The beaten sort selector lives in the site footer, below "Theme", and uses
-   RA's own .select classes — no extra styling needed here.) */
+/* ---- Beaten size & color (footer sliders drive these CSS variables) ---- */
+#gameawards .ra-beaten-section img.silverimage,
+#gameawards .ra-beaten-section img.plainimage {
+  width: calc(48px * var(--rabg-size, 1));
+  height: calc(48px * var(--rabg-size, 1));
+  filter: grayscale(var(--rabg-gray, 0));
+}
+#gameawards .ra-beaten-section .grid {
+  grid-template-columns: repeat(auto-fill,
+    minmax(calc(52px * var(--rabg-size, 1)), calc(52px * var(--rabg-size, 1))));
+}
+
+/* Hidden file input used by the Import button. */
+.ra-import-input { display: none; }
+
+/* ---- Footer slider rows ---- */
+/* Custom-drawn so Firefox and Chromium render IDENTICALLY: a 20px thumb
+   (gray filling + white ring on Dark/Black; inverted — white filling +
+   gray ring — on Light), and the fill reaches both ends at min/max
+   (Chromium's native slider leaves dead zones at the ends and draws a
+   much smaller, flat-colored thumb).
+   --ra-fill (0-100%) is kept in sync by content.js (syncRangeFill).
+   The padding/border/background resets matter: RA's global `input` rule
+   (form.css) styles all inputs, and it would show as a box once native
+   appearance is off. */
+.ra-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 110px;
+  height: 24px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  --ra-on: var(--text-color, #c8c8c8);
+  --ra-off: var(--color-neutral-700, #3f3f46);
+  --ra-thumb-fill: var(--color-neutral-400, #a3a3a3);
+  --ra-thumb-ring: var(--color-neutral-50, #fafafa);
+}
+.ra-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right,
+    var(--ra-on) 0,
+    var(--ra-on) var(--ra-fill, 50%),
+    var(--ra-off) var(--ra-fill, 50%),
+    var(--ra-off) 100%);
+}
+.ra-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box; /* 20px INCLUDES the 2px ring in every engine */
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--ra-thumb-fill);
+  border: 2px solid var(--ra-thumb-ring);
+  margin-top: -7px; /* center the 20px thumb on the 6px track */
+}
+.ra-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--ra-off);
+}
+.ra-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--ra-on);
+}
+.ra-range::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--ra-thumb-fill);
+  border: 2px solid var(--ra-thumb-ring);
+}
+/* Light scheme (explicit + follows the OS) — same recipe as the switch.
+   IMPORTANT: the thumb is themed by flipping these custom properties,
+   NEVER via a scoped rule that targets ::-webkit-slider-thumb directly —
+   Chromium/Edge silently fails to apply ancestor-scoped rules to the
+   slider-thumb pseudo (verified across three owner test rounds), while
+   custom-property changes restyle it reliably in every engine. */
+[data-scheme=light] .ra-range {
+  --ra-off: var(--color-neutral-200, #e5e5e5);
+  --ra-thumb-fill: #ffffff;
+  --ra-thumb-ring: var(--color-neutral-400, #a3a3a3);
+}
+@media (prefers-color-scheme: light) {
+  [data-scheme=system] .ra-range {
+    --ra-off: var(--color-neutral-200, #e5e5e5);
+    --ra-thumb-fill: #ffffff;
+    --ra-thumb-ring: var(--color-neutral-400, #a3a3a3);
+  }
+}
+.ra-range:focus-visible { outline: 2px solid var(--ra-on); outline-offset: 2px; }
+.ra-range-value {
+  font-size: 0.8125rem;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* ---- Footer "Manual Order" switch ---- */
+/* RA's footer rows use a legacy "align-center" class that doesn't actually
+   center flex children — make sure the switch and the Edit Badges button
+   stay vertically centered relative to each other. */
+.ra-footer-manual .flex.align-center.ml-2.gap-2 { align-items: center; }
+.ra-edit-slot { display: inline-flex; align-items: center; }
+.ra-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex: none; }
+.ra-switch input { opacity: 0; width: 0; height: 0; }
+.ra-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background: var(--color-neutral-700, #3f3f46);
+  transition: background 0.15s ease;
+}
+.ra-switch-slider:before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  /* top/left are relative to the padding box, which already starts 2px in
+     (inside the 2px transparent border) — 0/0 centers the 20px knob in the
+     24px track with even 2px margins, matching RA's own toggles. */
+  left: 0;
+  top: 0;
+  background: var(--color-neutral-50, #fafafa);
+  border-radius: 9999px;
+  transition: transform 0.15s ease;
+}
+/* Checked = RA's bg-text (the site's text color). */
+.ra-switch input:checked + .ra-switch-slider { background: var(--text-color, #c8c8c8); }
+.ra-switch input:checked + .ra-switch-slider:before { transform: translateX(20px); }
+/* Light scheme (explicit). */
+[data-scheme=light] .ra-switch-slider { background: var(--color-neutral-200, #e5e5e5); }
+[data-scheme=light] .ra-switch-slider:before { background: #ffffff; }
+/* Light scheme (follows the OS). */
+@media (prefers-color-scheme: light) {
+  [data-scheme=system] .ra-switch-slider { background: var(--color-neutral-200, #e5e5e5); }
+  [data-scheme=system] .ra-switch-slider:before { background: #ffffff; }
+}
+
+/* ---- Edit mode (manual order / hide) ---- */
+#gameawards .ra-beaten-section .ra-edit-btn { margin-left: 10px; }
+#gameawards .ra-beaten-grid .ra-tile { position: relative; }
+
+/* Disable RA's hover tooltips and link navigation on badges while editing —
+   pointer events go to the drag gesture instead. (.inline is the span that
+   carries RA's Alpine tooltip handlers.) */
+#gameawards .ra-beaten-grid.ra-editing .inline { pointer-events: none; }
+
+/* No text selection while press-and-hold dragging badges (mouse and touch). */
+#gameawards .ra-beaten-grid.ra-editing,
+#gameawards .ra-beaten-grid.ra-editing * {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Hidden badges (edit mode): dimmed, restorable. */
+#gameawards .ra-beaten-grid .ra-hidden { opacity: 0.5; }
+
+/* ✕ / ＋ buttons on each badge. */
+.ra-tile-btn {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  z-index: 6;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ra-tile-btn.ra-x { background: #dc2626; }
+.ra-tile-btn.ra-x:hover { background: #ef4444; }
+.ra-tile-btn.ra-plus { background: #16a34a; }
+.ra-tile-btn.ra-plus:hover { background: #22c55e; }
+
+/* Drag visuals: the badge's ghost follows the pointer while a dashed slot
+   previews exactly where it will land. */
+.ra-ghost {
+  position: fixed;
+  z-index: 9999;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.ra-drop-slot {
+  width: calc(52px * var(--rabg-size, 1));
+  height: calc(52px * var(--rabg-size, 1));
+  border: 2px dashed var(--text-color-muted, #828282);
+  border-radius: 4px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* Import hint (shown when Import is triggered from the popup): the footer
+   Import button pulses and a small hint points at it. */
+.ra-import-hint { animation: ra-pulse 1.2s ease-out 4; }
+@keyframes ra-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.8); }
+  70% { box-shadow: 0 0 0 8px rgba(96, 165, 250, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0); }
+}
+.ra-import-hint-text {
+  font-size: 0.75rem;
+  color: var(--link-color, #2c97fa);
+  white-space: nowrap;
+  margin-left: 6px;
+}
+
+/* RA's light-scheme button hovers aren't unified across the site. RABG's
+   own buttons use: black text + menu-link outline. Covers the light scheme
+   AND "system" while the OS prefers light (mirrors RA's own light:
+   variant). */
+body[data-scheme="light"] .ra-footer-export-btn:hover:not(:disabled),
+body[data-scheme="light"] .ra-footer-import-btn:hover:not(:disabled),
+body[data-scheme="light"] .ra-edit-btn:hover:not(:disabled) {
+  color: var(--link-hover-color, #000000);
+  border-color: var(--menu-link-color, #424242);
+}
+@media (prefers-color-scheme: light) {
+  body[data-scheme="system"] .ra-footer-export-btn:hover:not(:disabled),
+  body[data-scheme="system"] .ra-footer-import-btn:hover:not(:disabled),
+  body[data-scheme="system"] .ra-edit-btn:hover:not(:disabled) {
+    color: var(--link-hover-color, #000000);
+    border-color: var(--menu-link-color, #424242);
+  }
+}

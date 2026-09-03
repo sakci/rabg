@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RABG Settings</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<div class="header">
+  <img src="icons/gold.svg" class="crown" alt="">
+  <h1>RABG Settings</h1>
+</div>
+
+<div class="panel">
+  <label class="row">
+    <span>Beaten Sort</span>
+    <select id="sort" class="ctrl-select" size="1"></select>
+  </label>
+
+  <label class="row">
+    <span>Beaten Size</span>
+    <span class="ctrl sliders">
+      <input type="range" id="size" min="50" max="100" step="5">
+      <span id="size-val" class="val"></span>
+    </span>
+  </label>
+
+  <label class="row">
+    <span>Beaten Color</span>
+    <span class="ctrl sliders">
+      <input type="range" id="color" min="0" max="100" step="5">
+      <span id="color-val" class="val"></span>
+    </span>
+  </label>
+
+  <div class="row">
+    <span>Manual Order</span>
+    <span class="ctrl manual-ctrl">
+      <label class="ra-switch">
+        <input type="checkbox" id="manual">
+        <span class="ra-switch-slider"></span>
+      </label>
+      <button type="button" id="edit" class="btn edit-btn" disabled>Edit Badges</button>
+    </span>
+  </div>
+
+  <div class="row">
+    <span>Backup</span>
+    <span class="ctrl">
+      <button type="button" id="export" class="btn">Export</button>
+      <button type="button" id="import" class="btn" disabled title="Open a RetroAchievements tab to import">Import</button>
+    </span>
+  </div>
+
+  <div class="row last">
+    <span>Popup Theme</span>
+    <select id="popup-theme" class="ctrl-select" size="1" title="Auto follows the site's scheme and live colors"></select>
+  </div>
+</div>
+<script src="popup.js"></script>
+</body>
+</html>

@@ -10,3 +10,10 @@
 
 # v1.2.0 (2026/07/28)
 - You can now sort your beaten badges alphabetically! At the very bottom of the page (i.e. the footer section of the website), there'll be a settings section that lets you adjust the way the beaten badges are sorted.
+
+# v1.3.0 (2026/09/03)
+- You can now also access RABG settings by clicking the extension icon. It includes every footer setting, styled after RetroAchievements' own design, and follows your site theme.
+- You can now make your Beaten badges smaller and/or desaturate them, so they look less flashy than your Mastered badges. Two new sliders, "Beaten Size" and "Beaten Color", can be found in the RABG settings.
+- You can now manually order your Beaten badges and hide the ones you don't want to display (for your own profile only). Enable "Manual Order" in the RABG settings, then press the "Edit Badges" button: the page will scroll straight to your beaten badges, and then you can press and hold a badge to drag it around. You can click the ✕ button on a badge to hide it. Hidden badges can be restored via ＋ button. When you're done, click the "Finish Editing" button to save your changes. New beaten games will appear at the end of the list, visible by default.
+- You can now export and import all your RABG settings (sorting, size, color, manual order, hidden badges) as a JSON file. Handy for backing up or moving your settings between browsers.
+- Various polish and backend improvements.

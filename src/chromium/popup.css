@@ -1,0 +1,257 @@
+/* RABG popup — styled after RetroAchievements' own design.
+   The three scheme palettes below are RA's exact values (pulled from their
+   CSS): Dark (:root defaults), Black ([data-scheme=black]) and Light
+   ([data-scheme=light]) — each combined with RA's DEFAULT color theme,
+   which sets blue text/headings (#2C97FA) and gold links (#CC9900).
+   Note RA's light scheme is special: its buttons are WHITE with a gold
+   (link) border, while its dropdowns use the embed color (#f1f1f1) —
+   hence the separate --rabg-select-bg. popup.js applies the matching
+   .rabg-scheme-* class from the scheme captured on the page, then refines
+   individual colors with the live-captured values. */
+:root,
+.rabg-scheme-dark {
+  --rabg-bg: #1a1a1a;
+  --rabg-panel: #232323;
+  --rabg-border: #2a2a2a;
+  --rabg-text: #2c97fa;            /* default theme text (blue) */
+  --rabg-heading: #2c97fa;         /* default theme heading (blue) */
+  --rabg-muted: #4b4b4b;
+  --rabg-menu: #c8c8c8;
+  --rabg-val: #8c8c8c;             /* slider % text (RA's lighter dark text) */
+  --rabg-select-bg: #161616;       /* RA select background (embed) */
+  --rabg-btn-bg: #161616;
+  --rabg-btn-border: #3f3f46;
+  --rabg-btn-text: #cc9900;        /* default theme link (gold) */
+  --rabg-btn-hover-bg: #2a2a2a;
+  --rabg-btn-hover-border: #c8c8c8;
+  --rabg-btn-hover-text: #eeeeee;
+  --rabg-switch-on: #2c97fa;       /* RA switch: text color */
+  --rabg-switch-off: #3f3f46;
+  --rabg-knob: #fafafa;
+  --rabg-slider: #2c97fa;
+  --rabg-thumb-fill: #a3a3a3;       /* slider thumb: gray filling… */
+  --rabg-thumb-ring: #fafafa;       /* …with a white ring */
+}
+.rabg-scheme-black {
+  --rabg-bg: #0a0a0a;
+  --rabg-panel: #141414;
+  --rabg-border: #1e1e1e;
+  --rabg-text: #2c97fa;
+  --rabg-heading: #2c97fa;
+  --rabg-muted: #4b4b4b;
+  --rabg-menu: #bebebe;
+  --rabg-val: #8c8c8c;
+  --rabg-select-bg: #000000;
+  --rabg-btn-bg: #000000;
+  --rabg-btn-border: #3f3f46;
+  --rabg-btn-text: #cc9900;
+  --rabg-btn-hover-bg: #1e1e1e;
+  --rabg-btn-hover-border: #bebebe;
+  --rabg-btn-hover-text: #eeeeee;
+  --rabg-switch-on: #2c97fa;
+  --rabg-switch-off: #3f3f46;
+  --rabg-knob: #fafafa;
+  --rabg-slider: #2c97fa;
+  --rabg-thumb-fill: #a3a3a3;
+  --rabg-thumb-ring: #fafafa;
+}
+.rabg-scheme-light {
+  --rabg-bg: #f8f8f8;
+  --rabg-panel: #ffffff;
+  --rabg-border: #e6e6e6;
+  --rabg-text: #404040;
+  --rabg-heading: #404040;
+  --rabg-muted: #828282;
+  --rabg-menu: #424242;
+  --rabg-val: #828282;
+  --rabg-select-bg: #f1f1f1;       /* RA light select background (embed) */
+  --rabg-btn-bg: #ffffff;          /* RA light buttons are white… */
+  --rabg-btn-border: #a87e00;      /* …with a gold (link) border */
+  --rabg-btn-text: #a87e00;
+  --rabg-btn-hover-bg: #f5f5f5;    /* neutral-100, RA's light hover */
+  --rabg-btn-hover-border: #424242;
+  --rabg-btn-hover-text: #000000;
+  --rabg-switch-on: #404040;
+  --rabg-switch-off: #e5e5e5;
+  --rabg-knob: #ffffff;
+  --rabg-slider: #404040;
+  --rabg-thumb-fill: #ffffff;       /* inverted: white filling… */
+  --rabg-thumb-ring: #a3a3a3;       /* …with a gray ring */
+}
+
+* { box-sizing: border-box; }
+body {
+  width: 330px;
+  margin: 0;
+  padding: 12px;
+  background: var(--rabg-bg);
+  color: var(--rabg-text);
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 13px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.crown { width: 22px; height: 22px; }
+h1 {
+  font-size: 15px;
+  margin: 0;
+  color: var(--rabg-heading);
+}
+
+/* Settings panel — like RA's bordered component boxes. */
+.panel {
+  background: var(--rabg-panel);
+  border: 1px solid var(--rabg-border);
+  border-radius: 4px;
+  padding: 12px 12px 2px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.row > span:first-child { white-space: nowrap; }
+
+.ctrl { display: flex; align-items: center; gap: 6px; }
+.manual-ctrl { gap: 8px; }
+
+/* Select — mirrors RA's base select styling
+   (embed bg, menu-link text, muted border). */
+.ctrl-select {
+  background: var(--rabg-select-bg);
+  color: var(--rabg-menu);
+  border: 1px solid var(--rabg-muted);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  max-width: 172px;
+}
+
+/* Sliders — custom-drawn so Firefox and Chromium render IDENTICALLY: a
+   20px thumb (gray filling + white ring on Dark/Black; inverted on Light)
+   and a fill that reaches both ends at min/max (Chromium's native slider
+   leaves dead zones at the ends). THE RULE (established by three owner
+   test rounds in Edge): theme the thumb ONLY by flipping custom
+   properties (--rabg-thumb-fill/-ring per palette above) consumed by
+   these single unscoped rules — Chromium/Edge silently ignores
+   ancestor-SCOPED rules that target the slider-thumb pseudo directly,
+   and doesn't paint inset box-shadows on thumbs either. --ra-fill
+   (0-100%) is kept in sync by popup.js. */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 108px;
+  height: 24px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right,
+    var(--rabg-slider) 0,
+    var(--rabg-slider) var(--ra-fill, 50%),
+    var(--rabg-switch-off) var(--ra-fill, 50%),
+    var(--rabg-switch-off) 100%);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box; /* 20px INCLUDES the 2px ring in every engine */
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--rabg-thumb-fill, #a3a3a3);
+  border: 2px solid var(--rabg-thumb-ring, #fafafa);
+  margin-top: -7px; /* center the 20px thumb on the 6px track */
+}
+input[type=range]::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--rabg-switch-off);
+}
+input[type=range]::-moz-range-progress {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--rabg-slider);
+}
+input[type=range]::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--rabg-thumb-fill, #a3a3a3);
+  border: 2px solid var(--rabg-thumb-ring, #fafafa);
+}
+input[type=range]:focus-visible {
+  outline: 2px solid var(--rabg-slider);
+  outline-offset: 2px;
+}
+.val { min-width: 36px; text-align: right; font-size: 12px; color: var(--rabg-val, #8c8c8c); }
+
+/* Buttons — mirror the site's footer buttons. */
+.btn {
+  background: var(--rabg-btn-bg);
+  color: var(--rabg-btn-text);
+  border: 1px solid var(--rabg-btn-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+.btn:hover:not(:disabled) {
+  background: var(--rabg-btn-hover-bg);
+  border-color: var(--rabg-btn-hover-border);
+  color: var(--rabg-btn-hover-text);
+}
+
+/* Toggle switch — RA's own recipe (on = text color, off = neutral,
+   knob = neutral-50 / white; 20px knob, 20px travel). */
+.ra-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex: none; }
+.ra-switch input { opacity: 0; width: 0; height: 0; }
+.ra-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background: var(--rabg-switch-off);
+  transition: background 0.15s ease;
+}
+.ra-switch-slider:before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  /* top/left are relative to the padding box, which already starts 2px in
+     (inside the 2px transparent border) — 0/0 centers the 20px knob in the
+     24px track with even 2px margins, matching RA's own toggles. */
+  left: 0;
+  top: 0;
+  background: var(--rabg-knob);
+  border-radius: 9999px;
+  transition: transform 0.15s ease;
+}
+.ra-switch input:checked + .ra-switch-slider {
+  background: var(--rabg-switch-on);
+}
+.ra-switch input:checked + .ra-switch-slider:before {
+  transform: translateX(20px);
+}

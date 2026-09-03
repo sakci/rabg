@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RABG: Add Beaten Badges to RetroAchievements",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Shows your beaten games alongside mastered games in the Game Awards section of RetroAchievements profile pages.",
   "browser_specific_settings": {
     "gecko": {
@@ -18,6 +18,17 @@
     "48": "icons/gold.svg",
     "96": "icons/gold.svg"
   },
+  "action": {
+    "default_title": "RABG Settings",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icons/gold.svg",
+      "96": "icons/gold.svg"
+    }
+  },
+  "permissions": [
+    "storage"
+  ],
   "content_scripts": [
     {
       "matches": [
